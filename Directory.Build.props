@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <ToonProjectPath Condition="'$(ToonProjectPath)' == ''">$([System.Environment]::GetEnvironmentVariable('DEVOP_TOON_CSPROJ'))</ToonProjectPath>
+    <ToonCoreProjectPath Condition="'$(ToonCoreProjectPath)' == ''">$([System.Environment]::GetEnvironmentVariable('DEVOP_TOON_CORE_CSPROJ'))</ToonCoreProjectPath>
+  </PropertyGroup>
+</Project>

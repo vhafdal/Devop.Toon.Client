@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>DevOp.Toon.Client</RootNamespace>
+    <AssemblyName>DevOp.Toon.Client</AssemblyName>
+
+    <PackageId>DevOp.Toon.Client</PackageId>
+    <Version>0.1.1</Version>
+    <Authors>Þorvaldur Hafdal</Authors>
+    <Company>DevOp</Company>
+    <Description>Typed HttpClient integration for TOON-first APIs with JSON fallback.</Description>
+    <PackageTags>toon;httpclient;api;serialization;json;client</PackageTags>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageProjectUrl>https://devop-team.atlassian.net/wiki/spaces/Toon/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vhafdal/DevOp.Toon.Client</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>DevOp.snk</AssemblyOriginatorKeyFile>
+    <PublicSign>true</PublicSign>
+    <Title>DevOp Toon Client</Title>
+    <Copyright>Þorvaldur Hafdal(DevOp)</Copyright>
+    <PackageIcon>Assets/DevOp.Toon.Client-128.png</PackageIcon>
+    <PackageReleaseNotes>Initial DevOp rebrand release.</PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="LICENSE.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Assets/DevOp.Toon.Client-128.png" Pack="true" PackagePath="Assets/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <PackageReference Include="System.Text.Json" Version="10.0.2" />
+    <PackageReference Include="DevOp.Toon.Core" Version="0.1.2" Condition="'$(Configuration)' != 'Debug' or '$(ToonCoreProjectPath)' == ''" />
+    <PackageReference Include="DevOp.Toon" Version="0.2.3" Condition="'$(Configuration)' != 'Debug' or '$(ToonProjectPath)' == ''" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '$(ToonCoreProjectPath)' != ''">
+    <ProjectReference Include="$(ToonCoreProjectPath)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug' and '$(ToonProjectPath)' != ''">
+    <ProjectReference Include="$(ToonProjectPath)" />
+  </ItemGroup>
+
+</Project>
