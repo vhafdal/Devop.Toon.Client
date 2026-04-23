@@ -9,7 +9,7 @@
     <AssemblyName>DevOp.Toon.Client</AssemblyName>
 
     <PackageId>DevOp.Toon.Client</PackageId>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <Authors>Þorvaldur Hafdal</Authors>
     <Company>DevOp</Company>
     <Description>Typed HttpClient integration for TOON-first APIs with JSON fallback.</Description>
@@ -27,12 +27,12 @@
     <Copyright>Þorvaldur Hafdal(DevOp)</Copyright>
     <PackageIcon>Assets/DevOp.Toon.Client-128.png</PackageIcon>
     <PackageReleaseNotes>
-      Improves HTTP error diagnostics and client transport behavior.
-      - Adds response status, content type, and raw body details to ToonClientException
+      Improves TOON client request encoding defaults and transport behavior.
+      - Adds a default EncodeOptions ByteArrayFormat of Base64String for outbound TOON payloads
+      - Improves option cloning so explicit ByteArrayFormat values are preserved per client instance
       - Adds Decode&lt;T&gt;() support for structured TOON and JSON error responses
       - Adds optional request logging for success, failure, and decode paths
       - Adds automatic response decompression configuration through EnableCompression
-      - Updates DevOp.Toon.Core dependency to 0.1.3
     </PackageReleaseNotes>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
@@ -55,7 +55,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageReference Include="System.Text.Json" Version="10.0.2" />
     <PackageReference Include="DevOp.Toon.Core" Version="0.1.3" Condition="'$(Configuration)' != 'Debug' or '$(ToonCoreProjectPath)' == ''" />
-    <PackageReference Include="DevOp.Toon" Version="0.2.3" Condition="'$(Configuration)' != 'Debug' or '$(ToonProjectPath)' == ''" />
+    <PackageReference Include="DevOp.Toon" Version="0.2.8" Condition="'$(Configuration)' != 'Debug' or '$(ToonProjectPath)' == ''" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '$(ToonCoreProjectPath)' != ''">

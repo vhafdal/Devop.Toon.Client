@@ -21,9 +21,16 @@ public sealed class ToonClientOptions
     public TimeSpan? Timeout { get; set; }
 
     /// <summary>
-    /// Optional encode overrides used for TOON request bodies.
+    /// Encode options used for TOON request bodies.
     /// </summary>
-    public ToonEncodeOptions? EncodeOptions { get; set; }
+    /// <remarks>
+    /// Defaults <see cref="ToonEncodeOptions.ByteArrayFormat"/> to
+    /// <see cref="ToonByteArrayFormat.Base64String"/>.
+    /// </remarks>
+    public ToonEncodeOptions? EncodeOptions { get; set; } = new()
+    {
+        ByteArrayFormat = ToonByteArrayFormat.Base64String
+    };
 
     /// <summary>
     /// Optional decode overrides used for TOON responses.
@@ -96,6 +103,7 @@ public sealed class ToonClientOptions
             KeyFolding = options.KeyFolding,
             FlattenDepth = options.FlattenDepth,
             ObjectArrayLayout = options.ObjectArrayLayout,
+            ByteArrayFormat = options.ByteArrayFormat,
             IgnoreNullOrEmpty = options.IgnoreNullOrEmpty,
             ExcludeEmptyArrays = options.ExcludeEmptyArrays
         };

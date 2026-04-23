@@ -39,7 +39,7 @@ builder.Services.AddToonClient(options =>
 });
 ```
 
-`EncodeOptions` controls how this client serializes outbound TOON request bodies. `ResponseEncodeOverrides` controls which `X-Toon-Option-*` headers are sent so a TOON-aware server can format the response differently for this client.
+`EncodeOptions` controls how this client serializes outbound TOON request bodies and defaults `ByteArrayFormat` to `ToonByteArrayFormat.Base64String`. `ResponseEncodeOverrides` controls which `X-Toon-Option-*` headers are sent so a TOON-aware server can format the response differently for this client.
 
 ## Usage
 

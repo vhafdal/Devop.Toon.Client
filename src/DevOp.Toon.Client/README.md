@@ -34,7 +34,7 @@ builder.Services.AddToonClient(options =>
 });
 ```
 
-`EncodeOptions` applies to outbound TOON request bodies. `ResponseEncodeOverrides` sends `X-Toon-Option-*` headers so servers using `DevOp.Toon.API` can override response formatting per request.
+`EncodeOptions` applies to outbound TOON request bodies and defaults `ByteArrayFormat` to `ToonByteArrayFormat.Base64String`. `ResponseEncodeOverrides` sends `X-Toon-Option-*` headers so servers using `DevOp.Toon.API` can override response formatting per request.
 
 ## Package Notes
 
