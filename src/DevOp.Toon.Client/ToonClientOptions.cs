@@ -36,8 +36,13 @@ public sealed class ToonClientOptions
     public ToonResponseEncodeOverrideOptions? ResponseEncodeOverrides { get; set; }
 
     /// <summary>
-    /// JSON serializer options used for JSON fallback.
+    /// <see cref="System.Text.Json.JsonSerializerOptions"/> used when deserializing JSON responses or
+    /// when TOON decoding falls back to JSON conversion via <c>Toon2Json</c>.
     /// </summary>
+    /// <remarks>
+    /// Defaults to <see cref="System.Text.Json.JsonSerializerDefaults.Web"/> settings
+    /// (case-insensitive property matching, camelCase naming policy).
+    /// </remarks>
 #if NETSTANDARD2_0
     public JsonSerializerOptions JsonSerializerOptions { get; set; } = new()
     {
@@ -49,9 +54,20 @@ public sealed class ToonClientOptions
 #endif
 
     /// <summary>
-    /// The preferred TOON media type for request bodies.
+    /// The <c>Content-Type</c> media type used when encoding TOON request bodies.
     /// </summary>
+    /// <value>
+    /// Defaults to <c>application/toon</c> (<see cref="ToonMediaTypes.Application"/>).
+    /// Set to <c>text/toon</c> (<see cref="ToonMediaTypes.Text"/>) when the server requires it.
+    /// </value>
     public string ToonMediaType { get; set; } = ToonMediaTypes.Application;
+
+    /// <summary>
+    /// When <see langword="true"/> (the default), the registered <see cref="HttpClient"/> requests
+    /// GZip, Deflate, and (on .NET 5+) Brotli decompression automatically.
+    /// Set to <see langword="false"/> to disable all automatic decompression.
+    /// </summary>
+    public bool EnableCompression { get; set; } = true;
 
     internal ToonClientOptions Clone()
     {
@@ -63,7 +79,8 @@ public sealed class ToonClientOptions
             DecodeOptions = CloneDecodeOptions(DecodeOptions),
             ResponseEncodeOverrides = ResponseEncodeOverrides?.Clone(),
             JsonSerializerOptions = new JsonSerializerOptions(JsonSerializerOptions),
-            ToonMediaType = ToonMediaType
+            ToonMediaType = ToonMediaType,
+            EnableCompression = EnableCompression
         };
     }
 
