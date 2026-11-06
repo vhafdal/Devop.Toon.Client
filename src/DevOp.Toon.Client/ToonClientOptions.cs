@@ -96,17 +96,7 @@ public sealed class ToonClientOptions
         if (options == null)
             return null;
 
-        return new ToonEncodeOptions
-        {
-            Indent = options.Indent,
-            Delimiter = options.Delimiter,
-            KeyFolding = options.KeyFolding,
-            FlattenDepth = options.FlattenDepth,
-            ObjectArrayLayout = options.ObjectArrayLayout,
-            ByteArrayFormat = options.ByteArrayFormat,
-            IgnoreNullOrEmpty = options.IgnoreNullOrEmpty,
-            ExcludeEmptyArrays = options.ExcludeEmptyArrays
-        };
+        return options.Clone();
     }
 
     private static ToonDecodeOptions? CloneDecodeOptions(ToonDecodeOptions? options)
@@ -114,12 +104,6 @@ public sealed class ToonClientOptions
         if (options == null)
             return null;
 
-        return new ToonDecodeOptions
-        {
-            Indent = options.Indent,
-            Strict = options.Strict,
-            ExpandPaths = options.ExpandPaths,
-            ObjectArrayLayout = options.ObjectArrayLayout
-        };
+        return options.Clone();
     }
 }

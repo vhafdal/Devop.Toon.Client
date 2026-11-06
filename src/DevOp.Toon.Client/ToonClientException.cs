@@ -55,7 +55,7 @@ public sealed class ToonClientException : InvalidOperationException
     /// </summary>
     /// <value>
     /// The response body as a string, or <see langword="null"/> when the response had no body
-    /// or the exception was not created by <see cref="ToonClient"/>.
+    /// or could not be decoded as valid UTF-8, or the exception was not created by <see cref="ToonClient"/>.
     /// </value>
     public string? Content { get; }
 
