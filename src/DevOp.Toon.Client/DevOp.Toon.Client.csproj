@@ -9,7 +9,7 @@
     <AssemblyName>DevOp.Toon.Client</AssemblyName>
 
     <PackageId>DevOp.Toon.Client</PackageId>
-    <Version>0.1.3</Version>
+    <Version>0.2.0</Version>
     <Authors>Þorvaldur Hafdal</Authors>
     <Company>DevOp</Company>
     <Description>Typed HttpClient integration for TOON-first APIs with JSON fallback.</Description>
@@ -26,14 +26,13 @@
     <Title>DevOp Toon Client</Title>
     <Copyright>Þorvaldur Hafdal(DevOp)</Copyright>
     <PackageIcon>Assets/DevOp.Toon.Client-128.png</PackageIcon>
-    <PackageReleaseNotes>
-      Improves TOON client request encoding defaults and transport behavior.
-      - Adds a default EncodeOptions ByteArrayFormat of Base64String for outbound TOON payloads
-      - Improves option cloning so explicit ByteArrayFormat values are preserved per client instance
-      - Adds Decode&lt;T&gt;() support for structured TOON and JSON error responses
-      - Adds optional request logging for success, failure, and decode paths
-      - Adds automatic response decompression configuration through EnableCompression
-    </PackageReleaseNotes>
+    <PackageReleaseNotes>Adds protocol-aware TOON HTTP requests and responses.
+- Adds body-version metadata and enum-based response-version requests
+- Adds response version validation and preserves hints for fallback and lazy error decoding
+- Breaking: defaults outbound encoding to official 4.4; select CustomLegacy for previous wire behavior
+- Breaking: changes the response Indent override from bool? to int? to transmit an integer width
+- Improves response option reuse and UTF-8 validation without changing HTTP completion policy
+- Updates runtime and contracts dependencies to DevOp.Toon 0.3.0 and DevOp.Toon.Core 0.2.0</PackageReleaseNotes>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
@@ -54,8 +53,8 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageReference Include="System.Text.Json" Version="10.0.2" />
-    <PackageReference Include="DevOp.Toon.Core" Version="0.1.3" Condition="'$(Configuration)' != 'Debug' or '$(ToonCoreProjectPath)' == ''" />
-    <PackageReference Include="DevOp.Toon" Version="0.2.8" Condition="'$(Configuration)' != 'Debug' or '$(ToonProjectPath)' == ''" />
+    <PackageReference Include="DevOp.Toon.Core" Version="0.2.0" Condition="'$(Configuration)' != 'Debug' or '$(ToonCoreProjectPath)' == ''" />
+    <PackageReference Include="DevOp.Toon" Version="0.3.0" Condition="'$(Configuration)' != 'Debug' or '$(ToonProjectPath)' == ''" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '$(ToonCoreProjectPath)' != ''">

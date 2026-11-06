@@ -9,10 +9,14 @@ namespace DevOp.Toon.Client;
 /// </summary>
 public sealed class ToonResponseEncodeOverrideOptions
 {
+    /// <summary>Overrides the protocol version used for the response.</summary>
+    public ToonProtocolVersion? ProtocolVersion { get; set; }
+
     /// <summary>
-    /// Overrides whether the server should indent the TOON response.
+    /// Overrides the number of spaces per indentation level in the TOON response.
     /// </summary>
-    public bool? Indent { get; set; }
+    /// <remarks>DevOp.Toon.API accepts widths from 1 through 16.</remarks>
+    public int? Indent { get; set; }
 
     /// <summary>
     /// Overrides the delimiter used when the server writes the TOON response.
@@ -48,6 +52,7 @@ public sealed class ToonResponseEncodeOverrideOptions
     {
         return new ToonResponseEncodeOverrideOptions
         {
+            ProtocolVersion = ProtocolVersion,
             Indent = Indent,
             Delimiter = Delimiter,
             KeyFolding = KeyFolding,

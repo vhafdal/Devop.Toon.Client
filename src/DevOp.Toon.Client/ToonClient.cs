@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using DevOp.Toon;
+using DevOp.Toon.Core;
 using Microsoft.Extensions.Logging;
 
 namespace DevOp.Toon.Client;
@@ -19,6 +20,8 @@ namespace DevOp.Toon.Client;
 /// </summary>
 public sealed class ToonClient : IToonClient
 {
+    private static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
+    private static readonly Encoding ReplacingUtf8 = new UTF8Encoding(false, false);
     private const string OptionHeaderPrefix = "X-Toon-Option-";
     private static readonly HttpMethod PatchMethod = new("PATCH");
 
@@ -120,7 +123,8 @@ public sealed class ToonClient : IToonClient
             return default;
 
         var contentType = response.Content.Headers.ContentType?.MediaType;
-        var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        var decodeOptions = ResolveResponseOptions(response);
+        var body = await ReadResponseBodyAsync(response, contentType, decodeOptions).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (string.IsNullOrWhiteSpace(body))
@@ -131,7 +135,7 @@ public sealed class ToonClient : IToonClient
             T? result;
 
             if (IsToonMediaType(contentType))
-                result = DecodeToon<T>(body);
+                result = DecodeToon<T>(body, decodeOptions);
             else if (IsJsonMediaType(contentType))
                 result = JsonSerializer.Deserialize<T>(body, options.JsonSerializerOptions);
             else
@@ -144,7 +148,7 @@ public sealed class ToonClient : IToonClient
                     content: body,
                     contentType: contentType,
                     statusCode: response.StatusCode,
-                    decoder: CreateDecoder(contentType, body),
+                    decoder: CreateDecoder(contentType, body, decodeOptions),
                     innerException: null);
             }
 
@@ -163,17 +167,46 @@ public sealed class ToonClient : IToonClient
                 content: body,
                 contentType: contentType,
                 statusCode: response.StatusCode,
-                decoder: CreateDecoder(contentType, body),
+                decoder: CreateDecoder(contentType, body, decodeOptions),
                 innerException: ex);
         }
     }
 
-    private T? DecodeToon<T>(string body)
+    private static async Task<string> ReadResponseBodyAsync(HttpResponseMessage response, string? contentType, ToonDecodeOptions? decode)
     {
+        var content = response.Content!;
+        if (!IsToonMediaType(contentType)) return await content.ReadAsStringAsync().ConfigureAwait(false);
+        var replaceInvalid = decode?.ProtocolVersion is ToonProtocolVersion.CustomLegacy or ToonProtocolVersion.V3_0
+            || decode?.Strict == false && decode.ProtocolVersion is ToonProtocolVersion.V4_2 or ToonProtocolVersion.V4_3;
+        var bytes = await content.ReadAsByteArrayAsync().ConfigureAwait(false);
+        try { return (replaceInvalid ? ReplacingUtf8 : StrictUtf8).GetString(bytes); }
+        catch (DecoderFallbackException error)
+        {
+            throw new ToonClientException("The TOON response body is not valid UTF-8.", content: null,
+                contentType: contentType, statusCode: response.StatusCode, decoder: null, innerException: error);
+        }
+    }
+
+    private ToonDecodeOptions? ResolveResponseOptions(HttpResponseMessage response)
+    {
+        if (!IsToonMediaType(response.Content?.Headers.ContentType?.MediaType)) return null;
+        var decode = options.DecodeOptions?.Clone();
+        if (!response.Headers.TryGetValues("X-Toon-Version", out var headers)) return decode;
+        using var values = headers.GetEnumerator();
+        if (!values.MoveNext() || !ToonProtocolVersions.TryParse(values.Current, out var version) || values.MoveNext()) throw new ToonClientException("Invalid or unsupported response protocol version.");
+        decode ??= new ToonDecodeOptions();
+        if (decode.ProtocolVersion != ToonProtocolVersion.Auto && decode.ProtocolVersion != version) throw new ToonClientException("Response protocol version conflicts with configured decoder.");
+        decode.ProtocolVersion = version;
+        return decode;
+    }
+
+    private T? DecodeToon<T>(string body, ToonDecodeOptions? decodeOptions)
+    {
+        if (decodeOptions != null && options.DecodeOptions == null) decodeOptions = ToonDecoder.DetectOptions(body, decodeOptions);
         try
         {
-            if (options.DecodeOptions != null)
-                return toon.Decode<T>(body, options.DecodeOptions);
+            if (decodeOptions != null)
+                return toon.Decode<T>(body, decodeOptions);
 
             return toon.Decode<T>(body);
         }
@@ -181,15 +214,15 @@ public sealed class ToonClient : IToonClient
         {
             logger?.LogDebug("TOON native decode not supported for {Type}, falling back to Toon2Json", typeof(T).Name);
 
-            var json = options.DecodeOptions != null
-                ? toon.Toon2Json(body, options.DecodeOptions)
+            var json = decodeOptions != null
+                ? toon.Toon2Json(body, decodeOptions)
                 : toon.Toon2Json(body);
 
             return JsonSerializer.Deserialize<T>(json, options.JsonSerializerOptions);
         }
     }
 
-    private Func<Type, object?> CreateDecoder(string? contentType, string? content)
+    private Func<Type, object?> CreateDecoder(string? contentType, string? content, ToonDecodeOptions? decodeOptions)
     {
         return type =>
         {
@@ -200,8 +233,9 @@ public sealed class ToonClient : IToonClient
             {
                 if (IsToonMediaType(contentType))
                 {
-                    var json = options.DecodeOptions != null
-                        ? toon.Toon2Json(content!, options.DecodeOptions)
+                    if (decodeOptions != null && options.DecodeOptions == null) decodeOptions = ToonDecoder.DetectOptions(content!, decodeOptions);
+                    var json = decodeOptions != null
+                        ? toon.Toon2Json(content!, decodeOptions)
                         : toon.Toon2Json(content!);
                     return JsonSerializer.Deserialize(json, type, options.JsonSerializerOptions);
                 }
@@ -220,13 +254,17 @@ public sealed class ToonClient : IToonClient
         };
     }
 
+    private sealed class VersionedToonContent : StringContent
+    {
+        internal VersionedToonContent(string payload, string mediaType, ToonProtocolVersion version) : base(payload, Encoding.UTF8, mediaType) => Version = version;
+        internal ToonProtocolVersion Version { get; }
+    }
+
     private StringContent CreateToonContent<T>(T request)
     {
-        var payload = options.EncodeOptions != null
-            ? toon.Encode(request, options.EncodeOptions)
-            : toon.Encode(request);
-
-        return new StringContent(payload, Encoding.UTF8, options.ToonMediaType);
+        var encode = options.EncodeOptions ?? ToonEncoder.DefaultOptions;
+        var payload = toon.Encode(request, encode);
+        return new VersionedToonContent(payload, options.ToonMediaType, encode.ProtocolVersion);
     }
 
     private HttpRequestMessage CreateRequest(HttpMethod method, string requestUri, HttpContent? content)
@@ -240,6 +278,7 @@ public sealed class ToonClient : IToonClient
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json", 0.8));
         ApplyResponseEncodeOverrideHeaders(request);
         request.Content = content;
+        if (content is VersionedToonContent toonContent) request.Headers.TryAddWithoutValidation("X-Toon-Version", ToonProtocolVersions.Format(toonContent.Version));
         return request;
     }
 
@@ -249,6 +288,7 @@ public sealed class ToonClient : IToonClient
         if (overrides == null)
             return;
 
+        if (overrides.ProtocolVersion.HasValue) request.Headers.TryAddWithoutValidation("X-Toon-Option-ProtocolVersion", ToonProtocolVersions.Format(overrides.ProtocolVersion.Value));
         AddOverrideHeader(request, nameof(ToonResponseEncodeOverrideOptions.Indent), overrides.Indent);
         AddOverrideHeader(request, nameof(ToonResponseEncodeOverrideOptions.Delimiter), overrides.Delimiter);
         AddOverrideHeader(request, nameof(ToonResponseEncodeOverrideOptions.KeyFolding), overrides.KeyFolding);
@@ -307,11 +347,12 @@ public sealed class ToonClient : IToonClient
 
         string? errorBody = null;
         string? errorContentType = null;
+        var decodeOptions = ResolveResponseOptions(response);
 
         if (response.Content != null)
         {
             errorContentType = response.Content.Headers.ContentType?.MediaType;
-            errorBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            errorBody = await ReadResponseBodyAsync(response, errorContentType, decodeOptions).ConfigureAwait(false);
         }
 
         var statusCode = response.StatusCode;
@@ -327,7 +368,7 @@ public sealed class ToonClient : IToonClient
             content: errorBody,
             contentType: errorContentType,
             statusCode: statusCode,
-            decoder: CreateDecoder(errorContentType, errorBody),
+            decoder: CreateDecoder(errorContentType, errorBody, decodeOptions),
             innerException: null);
     }
 }
